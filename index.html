@@ -189,7 +189,7 @@ fetch('data.json')
         // 設置封面圖片
         const coverImage = document.getElementById('coverImage');
         if (d.coverImage) {
-          coverImage.src = 'images/' + d.coverImage;
+          coverImage.src = d.coverImage;
         } else {
           // 如果沒有設置封面圖片，使用預設圖片
           coverImage.src = 'images/box-top.png';
