@@ -41,31 +41,20 @@
       perspective: 1000px;
       cursor: pointer;
     }
-    .gift-top {
+    .cover-image {
       width: 100%;
-      position: absolute;
-      top: -35px;
-      left: 0;
-      transform-origin: left center;
+      height: auto;
+      border-radius: 10px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
       transition: transform 0.5s ease, opacity 0.5s ease;
       z-index: 2;
-    }
-    .gift-bottom {
-      width: 100%;
-      top: 35px;
       position: relative;
-      z-index: 1;
-      transition: transform 0.5s ease, opacity 0.5s ease;
     }
-    .gift-container:hover .gift-top {
-      transform: rotateX(25deg) rotateZ(-10deg);
+    .gift-container:hover .cover-image {
+      transform: scale(1.05);
     }
-    .gift-top.lift-open {
-      transform: translateY(-160px) rotate(-25deg) !important;
-      opacity: 0;
-    }
-    .gift-bottom.lift-bottom {
-      transform: translateY(80px);
+    .cover-image.lift-open {
+      transform: translateY(-160px) rotate(-25deg) scale(0.8) !important;
       opacity: 0;
     }
     #message, #pdf-container {
@@ -152,7 +141,7 @@
       position: absolute;
       z-index: 3;
       letter-spacing: 2px;
-      bottom: 20%;
+      bottom: -60px;
       left: 50%;
       transform: translateX(-50%);
     }
@@ -197,14 +186,21 @@ fetch('data.json')
         document.getElementById('mainTitle').textContent = d.title;
         document.getElementById('message').textContent = d.subtitle;
         window.pdfUrl = d.pdf;
+        // 設置封面圖片
+        const coverImage = document.getElementById('coverImage');
+        if (d.coverImage) {
+          coverImage.src = 'images/' + d.coverImage;
+        } else {
+          // 如果沒有設置封面圖片，使用預設圖片
+          coverImage.src = 'images/box-top.png';
+        }
       }).catch(console.error);
 </script>
 <body>
   <h1 id="mainTitle"> </h1>
   <div class="main-content">
     <div class="gift-container gift-animate" id="gift-box" tabindex="0" role="button" aria-label="Open the gift">
-      <img class="gift-top" src="images/box-top.png" alt="boxtop" id="giftTop">
-      <img class="gift-bottom" src="images/box-bottom.png" alt="boxbottom" id="giftBottom">
+      <img class="cover-image" src="images/box-top.png" alt="cover image" id="coverImage">
       <button class="open-button" id="openButton">OPEN</button>
     </div>
     <div id="message"> </div>
@@ -225,8 +221,7 @@ fetch('data.json')
 
   <script>
     const giftBox = document.getElementById('gift-box');
-    const giftTop = document.getElementById('giftTop');
-    const giftBottom = document.getElementById('giftBottom');
+    const coverImage = document.getElementById('coverImage');
     const openButton = document.getElementById('openButton');
     const message = document.getElementById('message');
     const pdfContainer = document.getElementById('pdf-container');
@@ -308,8 +303,7 @@ fetch('data.json')
 
     function openGift() {
       giftBox.classList.remove('gift-animate');
-      giftTop.classList.add('lift-open');
-      giftBottom.classList.add('lift-bottom');
+      coverImage.classList.add('lift-open');
       openButton.style.display = 'none';
 
       setTimeout(() => {
