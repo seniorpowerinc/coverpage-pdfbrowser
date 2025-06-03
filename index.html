@@ -179,7 +179,7 @@
 </head>
 <script>
 const bust = Date.now();
-fetch('data.json')
+fetch(`data.json?bust=${bust}`)
       .then(r=>r.json())
       .then(d=>{
         document.documentElement.lang = d.lang;
