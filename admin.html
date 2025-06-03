@@ -3,6 +3,9 @@
 
 <head>
     <meta charset="UTF-8" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>管理禮物頁面</title>
     <style>
         body {
@@ -305,7 +308,7 @@
         let filesSelected = { pdf: false, image: false };
 
         // 初始化 repo 資訊
-        fetch('data.json')
+        fetch(`data.json?bust=${Date.now()}`)
             .then(res => res.json())
             .then(data => {
                 owner = data.owner;
@@ -550,7 +553,7 @@
                 );
 
                 if (!response.ok) throw new Error('部署觸發失敗');
-                alert('部署已成功觸發，1 秒後顯示進度條並開始監控進度...');
+                alert('部署已成功觸發，5 秒後顯示進度條並開始監控進度...');
                 waitForWorkflow(token);
 
             } catch (error) {
@@ -580,7 +583,7 @@
                     })
                     .catch(err => alert('無法取得 workflow run：' + err.message));
 
-            }, 1000);
+            }, 5000);
         }
 
         // 監控部署進度
