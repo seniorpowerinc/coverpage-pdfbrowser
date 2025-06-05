@@ -384,7 +384,6 @@
                 .then(res => res.ok ? res.json() : Promise.reject('讀取失敗'))
                 .then(data => {
                     sha = data.sha;
-                    console.log(sha);
                     const raw = atob(data.content);
                     const content = JSON.parse(decodeURIComponent(escape(raw)));
                     document.getElementById('pageTitle').value = content.pageTitle || '';
