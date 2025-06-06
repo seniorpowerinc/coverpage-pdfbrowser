@@ -9,22 +9,23 @@
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <title id="pageTitle"></title>
   <style>
+    /* ---------- 全域樣式 ---------- */
     body {
       background: linear-gradient(135deg, #e0f7fa 0%, #bbdefb 50%, #c5cae9 100%);
       font-family: Arial, sans-serif;
       text-align: center;
       padding: 0;
-      overflow-x: hidden;
-      min-height: 100vh;
       margin: 0;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
 
+    /* 限制桌面寬度，並置中 */
     .main-content {
       width: 100%;
-      max-width: 800px;       /* 桌面限制寬度 */
+      max-width: 800px;      /* 桌機上常用寬度，可自行調整 */
       margin: 0 auto;
       flex: 1;
       display: flex;
@@ -68,10 +69,9 @@
       opacity: 0;
     }
 
-    #message,
+    #message, 
     #pdf-container {
       display: none;
-      margin-top: 0;
       opacity: 0;
       transform: translateY(20px);
       transition: opacity 1s ease, transform 1s ease;
@@ -85,13 +85,13 @@
       transform: translateY(0);
     }
 
-    /* 這裡把 iframe 設為 100% 寬高，讓 PDF.js Viewer 自己去處理版面 */
-    #pdf-viewer-iframe {
+    /* 直接把 PDF 的 iframe 設成寬度 100%，高度取視窗 */
+    #pdf-frame {
       width: 100%;
-      height: 80vh;            /* 桌面預設高度，你可以自由調整 */
-      border: none;            /* PDF.js Viewer 自帶邊框樣式，不需要外部邊框 */
+      height: 80vh;      /* 桌機版預設高度 */
+      border: none;
       border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
       margin-top: 16px;
     }
 
@@ -117,7 +117,6 @@
       animation: pulse 2s ease-in-out infinite;
       animation-delay: 1s;
     }
-
     @keyframes pulse {
       0% { transform: scale(1); }
       50% { transform: scale(1.05); }
@@ -129,34 +128,28 @@
       h1 {
         font-size: 28px;
       }
-
       .open-button {
         font-size: 28px;
         padding: 10px 24px;
         bottom: 40px;
       }
-
       .gift-container {
         width: 95vw;
         max-width: none;
       }
-
-      /* 手機上把 Viewer 的高度改短一些，方便上下滾動 */
-      #pdf-viewer-iframe {
+      #pdf-frame {
         width: 100%;
-        height: 60vh;
+        height: 60vh;   /* 手機上縮短一些 */
       }
-
       #message {
         font-size: 24px;
       }
     }
   </style>
 
-  <!-- 只保留 confetti（PDF.js 核心腳本和 viewer.js 都在 pdfjs 資料夾裡） -->
+  <!-- 只保留 confetti 動畫，不需要 PDF.js -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
-
 <body>
   <h1 id="mainTitle"></h1>
 
@@ -168,12 +161,12 @@
 
     <div id="message"></div>
 
-    <!-- 將下面的區塊改為載入 PDF.js viewer.html 的 iframe -->
+    <!-- 直接用 iframe 指向 PDF 本身 -->
     <div id="pdf-container">
       <iframe
-        id="pdf-viewer-iframe"
-        src=""                    <!-- 由 JavaScript 設定成 "pdfjs/web/viewer.html?file=<pdf-url>" -->
-        allowfullscreen           <!-- 確保手機可以切全螢幕預覽 -->
+        id="pdf-frame"
+        src=""             <!-- JS 裡面再把它塞成 window.pdfUrl -->
+        allowfullscreen
       ></iframe>
     </div>
   </div>
@@ -181,7 +174,7 @@
   <audio id="celebration-sound" src="images/open.mp3" preload="auto"></audio>
 
   <script>
-    // 讀 data.json，設定動態標題、封面、以及 PDF URL
+    // 讀 data.json，設定標題/副標題/PDF 路徑
     const bust = Date.now();
     fetch(`data.json?bust=${bust}`)
       .then(r => r.json())
@@ -190,9 +183,9 @@
         document.title = d.pageTitle;
         document.getElementById('mainTitle').textContent = d.title;
         document.getElementById('message').textContent = d.subtitle;
-        window.pdfUrl = d.pdf;
-        const coverImage = document.getElementById('coverImage');
-        coverImage.src = d.coverImage ? d.coverImage : 'images/SPI.png';
+        window.pdfUrl = d.pdf;  // PDF 檔的相對或絕對路徑
+        const coverImg = document.getElementById('coverImage');
+        coverImg.src = d.coverImage || 'images/SPI.png';
       })
       .catch(console.error);
 
@@ -202,7 +195,7 @@
     const message = document.getElementById('message');
     const pdfContainer = document.getElementById('pdf-container');
     const sound = document.getElementById('celebration-sound');
-    const pdfIframe = document.getElementById('pdf-viewer-iframe');
+    const pdfFrame = document.getElementById('pdf-frame');
 
     function openGift() {
       giftBox.classList.remove('gift-animate');
@@ -213,10 +206,8 @@
         giftBox.style.display = 'none';
         message.classList.add('show');
 
-        // 將 iframe.src 設成 PDF.js Viewer + PDF URL
-        // 注意要 encodeURIComponent(window.pdfUrl)
-        const viewerPath = `pdfjs/web/viewer.html?file=${encodeURIComponent(window.pdfUrl)}`;
-        pdfIframe.src = viewerPath;
+        // 最關鍵：直接把 iframe.src 設成 PDF 檔案
+        pdfFrame.src = window.pdfUrl;
 
         pdfContainer.classList.add('show');
 
@@ -233,7 +224,6 @@
       e.stopPropagation();
       openGift();
     });
-
     giftBox.addEventListener('click', openGift);
     giftBox.addEventListener('keydown', event => {
       if (event.key === 'Enter' || event.key === ' ') {
