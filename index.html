@@ -71,63 +71,14 @@
       opacity: 1;
       transform: translateY(0);
     }
-    #message {
-      font-size: 28px;
-    }
-    #pdf-render-container {
-      position: relative;
-      width: 100%;
-      max-width: 90%;
-      margin: 0 auto;
-    }
-    canvas {
-      width: 100% !important;
-      height: auto !important;
+    /* ↓ 取代 canvas 的部分 ↓ */
+    #pdf-embed {
+      width: 90%;
+      height: 80vh;
       border: 1px solid #ccc;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
       margin-top: 16px;
-      opacity: 0;
-      transition: opacity 0.5s ease-in;
-    }
-    canvas.fade-in {
-      opacity: 1;
-    }
-    .nav-button {
-      background-color: rgba(76, 175, 80, 0.7);
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 50px;
-      height: 50px;
-      font-size: 20px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: background-color 0.3s, transform 0.3s;
-      margin: 0 10px;
-    }
-    .nav-button:hover {
-      background-color: rgba(76, 175, 80, 1);
-      transform: scale(1.1);
-    }
-    .nav-button:active {
-      transform: scale(0.95);
-    }
-    .page-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 10px auto;
-    }
-    .page-info {
-      margin: 0 5px;
-      font-size: 18px;
-      background-color: rgba(255, 255, 255, 0.7);
-      padding: 5px 10px;
-      border-radius: 20px;
-      display: inline-block;
     }
     .open-button {
       background: linear-gradient(145deg, #63BE7B, #FFEF9C);
@@ -157,11 +108,6 @@
     }
     /* For mobile */
     @media (max-width: 768px) {
-      .nav-button {
-        width: 40px;
-        height: 40px;
-        font-size: 16px; 
-      }
       h1 {
         font-size: 28px;
       }
@@ -169,52 +115,51 @@
         font-size: 28px;
         padding: 10px 24px;
       }
-      .page-info {
-        font-size: 16px;
-      }
     }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- 如果完全不想用 PDF.js，就可以移除下一行；保留也不會影響內嵌iframe -->
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script> -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <script>
-const bust = Date.now();
-fetch(`data.json?bust=${bust}`)
-      .then(r=>r.json())
-      .then(d=>{
-        document.documentElement.lang = d.lang;
-        document.title = d.pageTitle;
-        document.getElementById('mainTitle').textContent = d.title;
-        document.getElementById('message').textContent = d.subtitle;
-        window.pdfUrl = d.pdf;
-        // 設置封面圖片
-        const coverImage = document.getElementById('coverImage');
-        if (d.coverImage) {
-          coverImage.src = d.coverImage;
-        } else {
-          // 如果沒有設置封面圖片，使用預設圖片
-          coverImage.src = 'images/SPI.png';
-        }
-      }).catch(console.error);
+  // 讀取 data.json，動態設定標題、封面、要載入的 PDF 路徑 window.pdfUrl
+  const bust = Date.now();
+  fetch(`data.json?bust=${bust}`)
+    .then(r => r.json())
+    .then(d => {
+      document.documentElement.lang = d.lang;
+      document.title = d.pageTitle;
+      document.getElementById('mainTitle').textContent = d.title;
+      document.getElementById('message').textContent = d.subtitle;
+      window.pdfUrl = d.pdf; // PDF 的網址，例如 "files/my-document.pdf"
+      const coverImage = document.getElementById('coverImage');
+      if (d.coverImage) {
+        coverImage.src = d.coverImage;
+      } else {
+        coverImage.src = 'images/SPI.png';
+      }
+    })
+    .catch(console.error);
 </script>
 <body>
-  <h1 id="mainTitle"> </h1>
+  <h1 id="mainTitle"></h1>
   <div class="main-content">
     <div class="gift-container gift-animate" id="gift-box" tabindex="0" role="button" aria-label="Open the gift">
       <img class="cover-image" src="images/box-top.png" alt="cover image" id="coverImage">
       <button class="open-button" id="openButton">READ</button>
     </div>
-    <div id="message"> </div>
+    <div id="message"></div>
 
+    <!-- 這裡是內嵌 PDF 的容器，一開始隱藏 -->
     <div id="pdf-container">
-      <div id="pdf-render-container">
-        <canvas id="pdf-canvas"></canvas>
-      </div>
-      <div class="page-controls">
-        <button id="prev-page" class="nav-button" aria-label="Previous page">❮</button>
-        <span class="page-info">Page <span id="page-num">1</span> / <span id="page-count">?</span></span>
-        <button id="next-page" class="nav-button" aria-label="Next page">❯</button>
-      </div>
+      <!-- 使用 <iframe> 讓瀏覽器原生顯示 PDF -->
+      <iframe
+        id="pdf-embed"
+        src=""   <!-- JS 會在打開時設定 src -->
+        type="application/pdf"
+        width="100%"
+        height="100%"
+      ></iframe>
     </div>
   </div>
 
@@ -227,80 +172,7 @@ fetch(`data.json?bust=${bust}`)
     const message = document.getElementById('message');
     const pdfContainer = document.getElementById('pdf-container');
     const sound = document.getElementById('celebration-sound');
-
-    const canvas = document.getElementById('pdf-canvas');
-    const ctx = canvas.getContext('2d');
-    const prevBtn = document.getElementById('prev-page');
-    const nextBtn = document.getElementById('next-page');
-    const pageNumSpan = document.getElementById('page-num');
-    const pageCountSpan = document.getElementById('page-count');
-
-    let pdfDoc = null;
-    let pageNum = 1;
-    let pageRendering = false;
-    let pageNumPending = null;
-    const scale = 1.2;
-
-    function renderPage(num) {
-      pageRendering = true;
-      canvas.classList.remove('fade-in');
-
-      pdfDoc.getPage(num).then(function(page) {
-        const viewport = page.getViewport({ scale });
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        const renderContext = { canvasContext: ctx, viewport: viewport };
-        const renderTask = page.render(renderContext);
-
-        renderTask.promise.then(() => {
-          pageRendering = false;
-          setTimeout(() => {
-            canvas.classList.add('fade-in');
-          }, 50);
-
-          if (pageNumPending !== null) {
-            renderPage(pageNumPending);
-            pageNumPending = null;
-          }
-        });
-
-        pageNumSpan.textContent = num;
-
-        prevBtn.style.visibility = num <= 1 ? 'hidden' : 'visible';
-        nextBtn.style.visibility = num >= pdfDoc.numPages ? 'hidden' : 'visible';
-      });
-    }
-
-    function queueRenderPage(num) {
-      if (pageRendering) {
-        pageNumPending = num;
-      } else {
-        renderPage(num);
-      }
-    }
-
-    function goPrevPage() {
-      if (pageNum <= 1) return;
-      pageNum--;
-      queueRenderPage(pageNum);
-    }
-
-    function goNextPage() {
-      if (pageNum >= pdfDoc.numPages) return;
-      pageNum++;
-      queueRenderPage(pageNum);
-    }
-
-    prevBtn.addEventListener('click', goPrevPage);
-    nextBtn.addEventListener('click', goNextPage);
-
-    document.addEventListener('keydown', (e) => {
-      if (pdfContainer.classList.contains('show')) {
-        if (e.key === 'ArrowLeft') goPrevPage();
-        else if (e.key === 'ArrowRight') goNextPage();
-      }
-    });
+    const pdfEmbed = document.getElementById('pdf-embed');
 
     function openGift() {
       giftBox.classList.remove('gift-animate');
@@ -309,26 +181,19 @@ fetch(`data.json?bust=${bust}`)
 
       setTimeout(() => {
         giftBox.style.display = 'none';
+        // 顯示訊息
         message.classList.add('show');
+        // 設定 iframe 的 src 並顯示它
+        pdfEmbed.src = window.pdfUrl;
         pdfContainer.classList.add('show');
+
         try {
           sound.play().catch(() => {});
           confetti({ particleCount: 150, spread: 120, origin: { y: 0.6 } });
-          loadPdf();
         } catch (err) {
           console.log('Error:', err);
         }
       }, 500);
-    }
-
-    function loadPdf() {
-      pdfjsLib.getDocument(window.pdfUrl).promise.then(function(pdf) {
-        pdfDoc = pdf;
-        pageCountSpan.textContent = pdf.numPages;
-        renderPage(pageNum);
-      }).catch(err => {
-        console.error('PDF loading error:', err);
-      });
     }
 
     openButton.addEventListener('click', e => {
@@ -337,7 +202,7 @@ fetch(`data.json?bust=${bust}`)
     });
 
     giftBox.addEventListener('click', openGift);
-    giftBox.addEventListener('keydown', (event) => {
+    giftBox.addEventListener('keydown', event => {
       if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault();
         openGift();
