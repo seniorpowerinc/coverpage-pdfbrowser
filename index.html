@@ -9,7 +9,6 @@
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <title id="pageTitle"></title>
   <style>
-    /* ---------- 全域樣式 ---------- */
     body {
       background: linear-gradient(135deg, #e0f7fa 0%, #bbdefb 50%, #c5cae9 100%);
       font-family: Arial, sans-serif;
@@ -23,11 +22,10 @@
       align-items: center;
     }
 
-    /* 將內容區置中，並限制桌面寬度 */
     .main-content {
       width: 100%;
-      max-width: 800px;       /* 桌面常用最大寬度，可自行調整 */
-      margin: 0 auto;         /* 置中 */
+      max-width: 800px;       /* 桌面限制寬度 */
+      margin: 0 auto;
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -87,11 +85,11 @@
       transform: translateY(0);
     }
 
-    /* 內嵌 PDF 的樣式 */
-    #pdf-embed {
-      width: 90%;
-      height: 80vh;
-      border: 1px solid #ccc;
+    /* 這裡把 iframe 設為 100% 寬高，讓 PDF.js Viewer 自己去處理版面 */
+    #pdf-viewer-iframe {
+      width: 100%;
+      height: 80vh;            /* 桌面預設高度，你可以自由調整 */
+      border: none;            /* PDF.js Viewer 自帶邊框樣式，不需要外部邊框 */
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       margin-top: 16px;
@@ -143,21 +141,19 @@
         max-width: none;
       }
 
-      /* PDF iframe 在手機上改成全寬、較短高度 */
-      #pdf-embed {
+      /* 手機上把 Viewer 的高度改短一些，方便上下滾動 */
+      #pdf-viewer-iframe {
         width: 100%;
         height: 60vh;
       }
 
-      /* #message 的字級也可以稍微縮小 */
       #message {
         font-size: 24px;
       }
     }
   </style>
 
-  <!-- 只保留 confetti，若不需要 PDF.js 可移除下面註解 -->
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script> -->
+  <!-- 只保留 confetti（PDF.js 核心腳本和 viewer.js 都在 pdfjs 資料夾裡） -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 
@@ -172,13 +168,12 @@
 
     <div id="message"></div>
 
+    <!-- 將下面的區塊改為載入 PDF.js viewer.html 的 iframe -->
     <div id="pdf-container">
       <iframe
-        id="pdf-embed"
-        src=""
-        type="application/pdf"
-        width="100%"
-        height="100%"
+        id="pdf-viewer-iframe"
+        src=""                    <!-- 由 JavaScript 設定成 "pdfjs/web/viewer.html?file=<pdf-url>" -->
+        allowfullscreen           <!-- 確保手機可以切全螢幕預覽 -->
       ></iframe>
     </div>
   </div>
@@ -186,7 +181,7 @@
   <audio id="celebration-sound" src="images/open.mp3" preload="auto"></audio>
 
   <script>
-    // 讀取 data.json，動態設定標題、封面、PDF 路徑
+    // 讀 data.json，設定動態標題、封面、以及 PDF URL
     const bust = Date.now();
     fetch(`data.json?bust=${bust}`)
       .then(r => r.json())
@@ -207,7 +202,7 @@
     const message = document.getElementById('message');
     const pdfContainer = document.getElementById('pdf-container');
     const sound = document.getElementById('celebration-sound');
-    const pdfEmbed = document.getElementById('pdf-embed');
+    const pdfIframe = document.getElementById('pdf-viewer-iframe');
 
     function openGift() {
       giftBox.classList.remove('gift-animate');
@@ -217,8 +212,12 @@
       setTimeout(() => {
         giftBox.style.display = 'none';
         message.classList.add('show');
-        // 將 iframe.src 指向 PDF，再顯示容器
-        pdfEmbed.src = window.pdfUrl;
+
+        // 將 iframe.src 設成 PDF.js Viewer + PDF URL
+        // 注意要 encodeURIComponent(window.pdfUrl)
+        const viewerPath = `pdfjs/web/viewer.html?file=${encodeURIComponent(window.pdfUrl)}`;
+        pdfIframe.src = viewerPath;
+
         pdfContainer.classList.add('show');
 
         try {
