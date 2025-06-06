@@ -1,14 +1,15 @@
 <!DOCTYPE html>
 <html lang="">
 <head>
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
   <meta charset="UTF-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
   <title id="pageTitle"></title>
   <style>
+    /* ---------- 全域樣式 ---------- */
     body {
       background: linear-gradient(135deg, #e0f7fa 0%, #bbdefb 50%, #c5cae9 100%);
       font-family: Arial, sans-serif;
@@ -19,9 +20,14 @@
       margin: 0;
       display: flex;
       flex-direction: column;
+      align-items: center;
     }
-    .header { padding: 0px 0; }
+
+    /* 將內容區置中，並限制桌面寬度 */
     .main-content {
+      width: 100%;
+      max-width: 800px;       /* 桌面常用最大寬度，可自行調整 */
+      margin: 0 auto;         /* 置中 */
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -29,11 +35,13 @@
       align-items: center;
       padding-bottom: 20px;
     }
+
     h1 {
       font-weight: bold;
       font-size: 34px;
       margin-bottom: 10px;
     }
+
     .gift-container {
       position: relative;
       width: 90vw;
@@ -42,44 +50,53 @@
       perspective: 1000px;
       cursor: pointer;
     }
+
     .cover-image {
       width: 100%;
       height: auto;
       border-radius: 10px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
       transition: transform 0.5s ease, opacity 0.5s ease;
       z-index: 2;
       position: relative;
     }
+
     .gift-container:hover .cover-image {
       transform: scale(1.05);
     }
+
     .cover-image.lift-open {
       transform: scale(1.8);
       opacity: 0;
     }
-    #message, #pdf-container {
+
+    #message,
+    #pdf-container {
       display: none;
       margin-top: 0;
       opacity: 0;
       transform: translateY(20px);
       transition: opacity 1s ease, transform 1s ease;
+      width: 100%;
     }
+
     #message.show,
     #pdf-container.show {
       display: block;
       opacity: 1;
       transform: translateY(0);
     }
-    /* ↓ 取代 canvas 的部分 ↓ */
+
+    /* 內嵌 PDF 的樣式 */
     #pdf-embed {
       width: 90%;
       height: 80vh;
       border: 1px solid #ccc;
       border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
       margin-top: 16px;
     }
+
     .open-button {
       background: linear-gradient(145deg, #63BE7B, #FFEF9C);
       color: black;
@@ -97,65 +114,68 @@
       left: 50%;
       transform: translateX(-50%);
     }
+
     .gift-animate {
       animation: pulse 2s ease-in-out infinite;
       animation-delay: 1s;
     }
+
     @keyframes pulse {
       0% { transform: scale(1); }
       50% { transform: scale(1.05); }
       100% { transform: scale(1); }
     }
-    /* For mobile */
+
+    /* ---------- 手機版調整 (max-width: 768px) ---------- */
     @media (max-width: 768px) {
       h1 {
         font-size: 28px;
       }
+
       .open-button {
         font-size: 28px;
         padding: 10px 24px;
+        bottom: 40px;
+      }
+
+      .gift-container {
+        width: 95vw;
+        max-width: none;
+      }
+
+      /* PDF iframe 在手機上改成全寬、較短高度 */
+      #pdf-embed {
+        width: 100%;
+        height: 60vh;
+      }
+
+      /* #message 的字級也可以稍微縮小 */
+      #message {
+        font-size: 24px;
       }
     }
   </style>
-  <!-- 如果完全不想用 PDF.js，就可以移除下一行；保留也不會影響內嵌iframe -->
+
+  <!-- 只保留 confetti，若不需要 PDF.js 可移除下面註解 -->
   <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script> -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
-<script>
-  // 讀取 data.json，動態設定標題、封面、要載入的 PDF 路徑 window.pdfUrl
-  const bust = Date.now();
-  fetch(`data.json?bust=${bust}`)
-    .then(r => r.json())
-    .then(d => {
-      document.documentElement.lang = d.lang;
-      document.title = d.pageTitle;
-      document.getElementById('mainTitle').textContent = d.title;
-      document.getElementById('message').textContent = d.subtitle;
-      window.pdfUrl = d.pdf; // PDF 的網址，例如 "files/my-document.pdf"
-      const coverImage = document.getElementById('coverImage');
-      if (d.coverImage) {
-        coverImage.src = d.coverImage;
-      } else {
-        coverImage.src = 'images/SPI.png';
-      }
-    })
-    .catch(console.error);
-</script>
+
 <body>
   <h1 id="mainTitle"></h1>
+
   <div class="main-content">
     <div class="gift-container gift-animate" id="gift-box" tabindex="0" role="button" aria-label="Open the gift">
       <img class="cover-image" src="images/box-top.png" alt="cover image" id="coverImage">
-      <button class="open-button" id="openButton">閱讀</button>
+      <button class="open-button" id="openButton">READ</button>
     </div>
+
     <div id="message"></div>
 
-    <!-- 這裡是內嵌 PDF 的容器，一開始隱藏 -->
     <div id="pdf-container">
-      <!-- 使用 <iframe> 讓瀏覽器原生顯示 PDF -->
       <iframe
         id="pdf-embed"
-        src=""   <!-- JS 會在打開時設定 src -->
+        src=""
         type="application/pdf"
         width="100%"
         height="100%"
@@ -166,6 +186,21 @@
   <audio id="celebration-sound" src="images/open.mp3" preload="auto"></audio>
 
   <script>
+    // 讀取 data.json，動態設定標題、封面、PDF 路徑
+    const bust = Date.now();
+    fetch(`data.json?bust=${bust}`)
+      .then(r => r.json())
+      .then(d => {
+        document.documentElement.lang = d.lang;
+        document.title = d.pageTitle;
+        document.getElementById('mainTitle').textContent = d.title;
+        document.getElementById('message').textContent = d.subtitle;
+        window.pdfUrl = d.pdf;
+        const coverImage = document.getElementById('coverImage');
+        coverImage.src = d.coverImage ? d.coverImage : 'images/SPI.png';
+      })
+      .catch(console.error);
+
     const giftBox = document.getElementById('gift-box');
     const coverImage = document.getElementById('coverImage');
     const openButton = document.getElementById('openButton');
@@ -181,9 +216,8 @@
 
       setTimeout(() => {
         giftBox.style.display = 'none';
-        // 顯示訊息
         message.classList.add('show');
-        // 設定 iframe 的 src 並顯示它
+        // 將 iframe.src 指向 PDF，再顯示容器
         pdfEmbed.src = window.pdfUrl;
         pdfContainer.classList.add('show');
 
