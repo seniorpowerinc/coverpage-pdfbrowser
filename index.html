@@ -15,13 +15,13 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden; /* 初始先把滾動鎖在 body，PDF 會由 iframe 處理滾動 */
+      /* 將 overflow 設回 auto，讓 iframe 內部的滾動事件能正常傳遞 */
+      overflow: auto;
       background: linear-gradient(135deg, #e0f7fa 0%, #bbdefb 50%, #c5cae9 100%);
       font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-start;
     }
 
     /* 桌面版內容置中，限制寬度 */
@@ -115,7 +115,7 @@
       100% { transform: scale(1); }
     }
 
-    /* ---------- PDF 全螢幕容器 ---------- */
+    /* ---------- PDF 全螢幕可滾動容器 ---------- */
     #pdf-container {
       display: none;          /* 一開始隱藏 */
       position: fixed;
@@ -123,14 +123,16 @@
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: white;      /* 背景白色，確保字頁可讀 */
-      z-index: 999;           /* 壓到最上面 */
+      background: white;      /* 背景白，確保正文可讀 */
+      z-index: 999;           /* 壓到最上層 */
+      overflow: auto;         /* 讓內部 scrollable */
+      -webkit-overflow-scrolling: touch; /* iOS 上啟用慣性滑動 */
     }
     #pdf-container.show {
       display: block;
     }
 
-    /* iframe 滿版 */
+    /* iframe 滿版、100% 高度 */
     #pdf-frame {
       width: 100%;
       height: 100%;
@@ -189,7 +191,7 @@
         document.title = d.pageTitle;
         document.getElementById('mainTitle').textContent = d.title;
         document.getElementById('message').textContent = d.subtitle;
-        // PDF 路徑 (相對或絕對皆可)，稍後會給 iframe.src
+        // PDF 檔路徑 (相對或絕對皆可)
         window.pdfUrl = d.pdf;
         // 如果有自訂封面，就用它
         const coverImg = document.getElementById('coverImage');
@@ -206,27 +208,26 @@
     const sound = document.getElementById('celebration-sound');
 
     function openGift() {
-      // 停止禮物的脈動動畫
+      // 停止禮物動畫
       giftBox.classList.remove('gift-animate');
-      // 封面往上升並淡出
+      // 封面升起並淡出
       coverImage.classList.add('lift-open');
       // 隱藏按鈕
       openButton.style.display = 'none';
 
-      // 半秒後移除禮物區並顯示文字、PDF
       setTimeout(() => {
-        // 把禮物區整個移除或隱藏
+        // 隱藏禮物區
         giftBox.style.display = 'none';
-        // 顯示底下文字
+        // 顯示文字訊息
         message.classList.add('show');
 
-        // 直接把 iframe.src 設為 PDF 檔案，瀏覽器原生 PDF 引擎會處理滾動和縮放
+        // 設定 iframe.src 為 PDF 檔
         pdfFrame.src = window.pdfUrl;
 
-        // 顯示 PDF 容器（全螢幕）
+        // 顯示 PDF 容器 (全螢幕可滾動)
         pdfContainer.classList.add('show');
 
-        // 播放開禮物音效與 confetti
+        // 播放音效與 confetti
         try {
           sound.play().catch(() => {});
           confetti({ particleCount: 150, spread: 120, origin: { y: 0.6 } });
@@ -236,7 +237,7 @@
       }, 500);
     }
 
-    // 綁定按鈕與點擊、鍵盤事件
+    // 綁定按鈕、點擊與鍵盤事件
     openButton.addEventListener('click', e => {
       e.stopPropagation();
       openGift();
