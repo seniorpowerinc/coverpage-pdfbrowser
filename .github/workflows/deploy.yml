@@ -9,7 +9,7 @@ on:
     paths:
       - 'data.json'
       - 'index.html'
-      - 'admin.html'
+      - 'admin/admin.html'
       - 'pdfs/**'
   workflow_dispatch:
 
