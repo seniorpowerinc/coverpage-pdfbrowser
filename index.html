@@ -38,15 +38,10 @@
       box-sizing: border-box;
     }
 
-    h1 {
-      font-weight: bold;
-      font-size: 34px;
-      margin: 20px 0 10px;
-    }
-
     .gift-container {
       position: relative;
-      width: 90vw;
+      width: 100vw;
+      height: 100vh;
       max-width: 500px;
       margin: 0 auto 20px auto;
       perspective: 1000px;
@@ -56,6 +51,7 @@
     .cover-image {
       width: 100%;
       height: auto;
+      display: block;
       border-radius: 10px;
       box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
       transition: transform 0.5s ease, opacity 0.5s ease;
@@ -72,21 +68,7 @@
       opacity: 0;
     }
 
-    /* 文字訊息（打開後顯示） */
-    #message {
-      display: none;
-      font-size: 28px;
-      margin-top: 20px;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 1s ease, transform 1s ease;
-    }
-    #message.show {
-      display: block;
-      opacity: 1;
-      transform: translateY(0);
-    }
-
+   
     .open-button {
       background: linear-gradient(145deg, #63BE7B, #FFEF9C);
       color: black;
@@ -117,61 +99,38 @@
 
     /* ---------- PDF 全螢幕可滾動容器 ---------- */
     #pdf-container {
-      display: none;          /* 一開始隱藏 */
+      display: none;
       position: fixed;
       top: 0;
       left: 0;
-      width: 80%;
+      width: 100vw;
       height: 100vh;
-      background: white;      /* 背景白，確保正文可讀 */
-      z-index: 999;           /* 壓到最上層 */
-      overflow: auto;         /* 讓內部 scrollable */
-      -webkit-overflow-scrolling: touch; /* iOS 上啟用慣性滑動 */
+      background: #fff;
+      z-index: 100;
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
     }
     #pdf-container.show {
       display: block;
     }
-
-    /* iframe 滿版、100% 高度 */
     #pdf-frame {
-      width: 90%;
-      height: 90%;
+      width: 100%;
+      height: 100%;
       border: none;
+      display: block;
     }
 
-    /* ---------- 手機版額外調整 ---------- */
-    @media (max-width: 768px) {
-      h1 {
-        font-size: 28px;
-      }
-      .open-button {
-        font-size: 28px;
-        padding: 10px 24px;
-        bottom: 40px;
-      }
-      .gift-container {
-        width: 95%;
-        max-width: none;
-      }
-      #message {
-        font-size: 24px;
-      }
-    }
   </style>
 
   <!-- 只保留 confetti 動畫，不要 PDF.js -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <h1 id="mainTitle"></h1>
-
   <div class="main-content">
     <div class="gift-container gift-animate" id="gift-box" tabindex="0" role="button" aria-label="Open the gift">
       <img class="cover-image" src="images/box-top.png" alt="cover image" id="coverImage">
-      <button class="open-button" id="openButton">READ</button>
+      <button class="open-button" id="openButton">閱讀</button>
     </div>
-
-    <div id="message"></div>
   </div>
 
   <!-- 全螢幕 PDF 容器 -->
@@ -189,8 +148,6 @@
       .then(d => {
         document.documentElement.lang = d.lang;
         document.title = d.pageTitle;
-        document.getElementById('mainTitle').textContent = d.title;
-        document.getElementById('message').textContent = d.subtitle;
         // PDF 檔路徑 (相對或絕對皆可)
         window.pdfUrl = d.pdf;
         // 如果有自訂封面，就用它
@@ -202,7 +159,6 @@
     const giftBox = document.getElementById('gift-box');
     const coverImage = document.getElementById('coverImage');
     const openButton = document.getElementById('openButton');
-    const message = document.getElementById('message');
     const pdfContainer = document.getElementById('pdf-container');
     const pdfFrame = document.getElementById('pdf-frame');
     const sound = document.getElementById('celebration-sound');
