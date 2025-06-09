@@ -147,7 +147,6 @@
       .then(res => res.json())
       .then(d => {
         document.documentElement.lang = d.lang;
-        document.title = d.pageTitle;
         // PDF 檔路徑 (相對或絕對皆可)
         window.pdfUrl = d.pdf;
         // 如果有自訂封面，就用它
@@ -174,8 +173,6 @@
       setTimeout(() => {
         // 隱藏禮物區
         giftBox.style.display = 'none';
-        // 顯示文字訊息
-        message.classList.add('show');
 
         // 設定 iframe.src 為 PDF 檔
         pdfFrame.src = window.pdfUrl;
