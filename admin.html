@@ -124,15 +124,12 @@
     }
 
     /* 隱藏真實檔案輸入 */
-    #pdf,
-    #pdfFile,
     #coverImage,
     #coverImageFile {
       display: none;
     }
 
     /* 選擇檔案按鈕 */
-    #fileLabel,
     #imageLabel {
       display: inline-block;
       padding: 12px 24px;
@@ -147,12 +144,10 @@
       transition: background 0.3s;
     }
 
-    #fileLabel:hover:not(.disabled-label),
     #imageLabel:hover:not(.disabled-label) {
       background: linear-gradient(to right, #43e97b, #38f9d7);
     }
 
-    #selectedFileName,
     #selectedImageName {
       margin-top: 5px;
       font-size: 20px;
@@ -217,6 +212,50 @@
       margin-top: 10px;
       border-radius: 10px;
     }
+
+    /* PDF URL 輸入樣式 */
+    #pdfUrl {
+      font-size: 16px;
+      padding: 12px;
+      border: 2px solid #4facfe;
+      border-radius: 8px;
+      background: white;
+    }
+
+    #pdfUrl:focus {
+      outline: none;
+      border-color: #00f2fe;
+      box-shadow: 0 0 5px rgba(79, 172, 254, 0.3);
+    }
+
+    .url-helper {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+      line-height: 1.4;
+    }
+
+    .url-status {
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 4px;
+      font-size: 14px;
+      display: none;
+    }
+
+    .url-status.valid {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+
+    .url-status.invalid {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
   </style>
 </head>
 
@@ -236,12 +275,12 @@
     <div class="arrow" id="arrow1">➤</div>
 
     <div class="step-indicator" id="step2" data-step="2">
-      <span>選擇檔案</span>
+      <span>輸入資料</span>
     </div>
     <div class="arrow" id="arrow2">➤</div>
 
     <div class="step-indicator" id="step3" data-step="3">
-      <span>上傳檔案</span>
+      <span>上傳圖片</span>
     </div>
     <div class="arrow" id="arrow3">➤</div>
 
@@ -267,8 +306,20 @@
     <option value="ja\">日本語</option>
   </select>
 
-  <input id="pdf" readonly />
   <input id="coverImage" readonly />
+
+  <!-- PDF URL 輸入區塊 -->
+  <div class="file-upload-section">
+    <h3>📄 PDF Google 雲端硬碟網址</h3>
+    <label for="pdfUrl">PDF 分享網址</label>
+    <input type="url" id="pdfUrl" placeholder="貼上 Google 雲端硬碟的 PDF 分享網址" oninput="validatePdfUrl()" />
+    <div class="url-helper">
+      請確保：<br>
+      1. PDF 已設定為「知道連結的人都能查看」<br>
+      2. 網址格式類似：https://drive.google.com/file/d/檔案ID/view?usp=sharing
+    </div>
+    <div id="urlStatus" class="url-status"></div>
+  </div>
 
   <!-- 封面圖片上傳區塊 -->
   <div class="file-upload-section">
@@ -276,25 +327,14 @@
     <div id="imageDropZone" class="drag-drop-area">
       將圖片拖曳到這裡或點擊下方按鈕選擇
     </div>
-    <label id="imageLabel" for="coverImageFile">2A. 選擇封面圖片</label>
+    <label id="imageLabel" for="coverImageFile">2. 選擇封面圖片</label>
     <input type="file" id="coverImageFile" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" onchange="onImageSelected()" />
     <div id="selectedImageName"></div>
     <img id="imagePreview" alt="圖片預覽" />
   </div>
 
-  <!-- PDF 上傳區塊 -->
-  <div class="file-upload-section">
-    <h3>📄 PDF 檔案 (可拖曳)</h3>
-    <div id="pdfDropZone" class="drag-drop-area">
-      將 PDF 拖曳到這裡或點擊下方按鈕選擇
-    </div>
-    <label id="fileLabel" for="pdfFile">2B. 選擇 PDF 檔案</label>
-    <input type="file" id="pdfFile" accept="application/pdf" onchange="onPDFSelected()" />
-    <div id="selectedFileName"></div>
-  </div>
-
   <button id="uploadButton" class="step-button" onclick="uploadFiles()" disabled>
-    3. 上傳檔案
+    3. 上傳圖片
   </button>
 
   <!-- 部署進度條 -->
@@ -324,25 +364,58 @@
       })
       .catch(err => alert('無法讀取 data.json：' + err));
 
+    // 驗證 PDF URL
+    function validatePdfUrl() {
+      const urlInput = document.getElementById('pdfUrl');
+      const statusDiv = document.getElementById('urlStatus');
+      const url = urlInput.value.trim();
+      
+      if (!url) {
+        statusDiv.style.display = 'none';
+        filesSelected.pdf = false;
+        updateButtonStates();
+        return;
+      }
+
+      // 檢查是否為 Google Drive 分享連結
+      const drivePattern = /^https:\/\/drive\.google\.com\/file\/d\/[a-zA-Z0-9_-]+\/view(\?usp=sharing)?$/;
+      
+      if (drivePattern.test(url)) {
+        statusDiv.className = 'url-status valid';
+        statusDiv.textContent = '✓ 有效的 Google 雲端硬碟網址';
+        filesSelected.pdf = true;
+        if (currentStep < 2) {
+          currentStep = 2;
+          markStepDone(2);
+        }
+      } else {
+        statusDiv.className = 'url-status invalid';
+        statusDiv.textContent = '✗ 請輸入有效的 Google 雲端硬碟分享網址';
+        filesSelected.pdf = false;
+      }
+      
+      updateButtonStates();
+    }
+
     // 更新按鈕狀態
     function updateButtonStates() {
       document.getElementById('loadButton').disabled = currentStep !== 0;
 
-      const fileLabel = document.getElementById('fileLabel');
       const imageLabel = document.getElementById('imageLabel');
       const uploadBtn = document.getElementById('uploadButton');
       const updateBtn = document.getElementById('updateButton');
+      const pdfUrlInput = document.getElementById('pdfUrl');
 
-      // 步驟1~2：選擇檔案可用
+      // 步驟1~2：輸入資料可用
       if (currentStep >= 1 && currentStep < 3) {
-        fileLabel.classList.remove('disabled-label');
         imageLabel.classList.remove('disabled-label');
+        pdfUrlInput.disabled = false;
       } else {
-        fileLabel.classList.add('disabled-label');
         imageLabel.classList.add('disabled-label');
+        pdfUrlInput.disabled = true;
       }
 
-      // 步驟2：上傳檔案可用（需要同時選擇 PDF 與 圖片）
+      // 步驟2：上傳圖片可用（需要有 PDF URL 與 圖片）
       uploadBtn.disabled = (currentStep !== 2 || !filesSelected.pdf || !filesSelected.image);
 
       // 步驟3：更新網站可用
@@ -378,7 +451,7 @@
       const token = document.getElementById('token').value.trim();
       if (!token) {
         alert('請輸入 GitHub Token');
-        throw new	Error('Token is required');
+        throw new Error('Token is required');
       }
       return token;
     }
@@ -396,8 +469,11 @@
           const content = JSON.parse(decodeURIComponent(escape(raw)));
           document.getElementById('pageTitle').value = content.pageTitle || '';
           document.getElementById('lang').value = content.lang || 'zh-TW';
-          document.getElementById('pdf').value = content.pdf || '';
+          document.getElementById('pdfUrl').value = content.pdf || '';
           document.getElementById('coverImage').value = content.coverImage || '';
+
+          // 驗證載入的 PDF URL
+          validatePdfUrl();
 
           currentStep = 1;
           markStepDone(1);
@@ -445,35 +521,6 @@
       updateButtonStates();
     }
 
-    // PDF 選擇與檢查
-    function onPDFSelected() {
-      const input = document.getElementById('pdfFile');
-      const file = input.files[0];
-      const nameDisplay = document.getElementById('selectedFileName');
-      if (!file) return;
-      if (file.type !== 'application/pdf') {
-        alert('請選擇有效的 PDF 檔案');
-        input.value = '';
-        filesSelected.pdf = false;
-        updateButtonStates();
-        return;
-      }
-      if (file.size > 10 * 1024 * 1024) {
-        alert('PDF 檔案大小不能超過 10MB');
-        input.value = '';
-        filesSelected.pdf = false;
-        updateButtonStates();
-        return;
-      }
-      nameDisplay.textContent = '已選擇 PDF：' + file.name;
-      filesSelected.pdf = true;
-      if (currentStep < 2) {
-        currentStep = 2;
-        markStepDone(2);
-      }
-      updateButtonStates();
-    }
-
     // 拖曳上傳設定
     function setupDragDrop(dropZoneId, inputId, onFileSet) {
       const dropZone = document.getElementById(dropZoneId);
@@ -496,32 +543,32 @@
     }
 
     setupDragDrop('imageDropZone', 'coverImageFile', onImageSelected);
-    setupDragDrop('pdfDropZone', 'pdfFile', onPDFSelected);
 
-    // 同時上傳檔案並更新 data.json
+    // 上傳圖片並更新資料
     async function uploadFiles() {
       const token = getToken();
-      const pdfFile = document.getElementById('pdfFile').files[0];
       const imageFile = document.getElementById('coverImageFile').files[0];
-      if (!pdfFile || !imageFile) {
-        alert('請同時選擇 PDF 與封面圖片');
+      const pdfUrl = document.getElementById('pdfUrl').value.trim();
+      
+      if (!imageFile || !pdfUrl) {
+        alert('請選擇封面圖片並輸入 PDF 網址');
         return;
       }
-      alert('檔案上傳中，請稍等');
+      
+      alert('圖片上傳中，請稍等');
       document.getElementById('uploadButton').disabled = true;
       document.getElementById('updateButton').disabled = true;
+      
       try {
-        // 上傳 PDF
-        await uploadFile(pdfFile, `pdfs/${pdfFile.name}`, token);
-        document.getElementById('pdf').value = `pdfs/${pdfFile.name}`;
         // 上傳圖片
         await uploadFile(imageFile, `images/${imageFile.name}`, token);
         document.getElementById('coverImage').value = `images/${imageFile.name}`;
-        // 兩檔案上傳完畢，設定步驟3
+        
+        // 圖片上傳完畢，設定步驟3
         currentStep = 3;
         markStepDone(3);
         updateButtonStates();
-        alert('檔案上傳完畢，請進行第四步更新網站');
+        alert('圖片上傳完畢，請進行第四步更新網站');
       } catch (err) {
         alert('上傳失敗：' + err);
         currentStep = 2;
@@ -559,7 +606,7 @@
       const payload = {
         pageTitle: document.getElementById('pageTitle').value,
         lang: document.getElementById('lang').value,
-        pdf: document.getElementById('pdf').value,
+        pdf: document.getElementById('pdfUrl').value.trim(),
         coverImage: document.getElementById('coverImage').value,
         owner,
         repo
