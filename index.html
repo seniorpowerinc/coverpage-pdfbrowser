@@ -39,21 +39,7 @@
     }
     .gift-container:hover .cover-image { transform: scale(1.05); }
     .cover-image.lift-open { transform: scale(1.8); opacity:0; }
-    #message {
-      display:none; font-size:28px; margin-top:20px;
-      opacity:0; transform:translateY(20px);
-      transition:opacity 1s, transform 1s;
-    }
-    #message.show { display:block; opacity:1; transform:translateY(0); }
-    .open-button {
-      background: linear-gradient(145deg, #63BE7B, #FFEF9C);
-      color:black; border:none; padding:12px 30px;
-      font-size:34px; font-weight:bold; border-radius:50px;
-      box-shadow:0 5px 15px rgba(255,94,98,0.4);
-      position:absolute; z-index:3; letter-spacing:2px;
-      bottom:60px; left:50%; transform:translateX(-50%);
-      cursor:pointer;
-    }
+   
     .gift-animate { animation:pulse 2s ease-in-out infinite; animation-delay:1s; }
     @keyframes pulse {
       0% { transform:scale(1); } 50% { transform:scale(1.05); } 100% { transform:scale(1); }
@@ -61,35 +47,29 @@
 
     /* 全螢幕 PDF 容器 */
     #pdf-container {
-      display:none; position:fixed; top:0; left:0;
-      width:80%; height:100vh; background:white;
-      z-index:999; overflow:auto; -webkit-overflow-scrolling: touch;
+      display: none;       /* 一樣初始隱藏 */
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;         /* 改成 100% 全寬 */
+      height: 100%;        /* 改成 100% 全高 */
+      background: #fff;
+      z-index: 999;
     }
-    #pdf-container.show { display:block; }
     #pdf-frame {
-      width:90%; height:90%; border:none;
-    }
-
-    /* 手機版微調 */
-    @media (max-width:768px) {
-      h1 { font-size:28px; }
-      .open-button { font-size:28px; padding:10px 24px; bottom:40px; }
-      .gift-container { width:95%; }
-      #message { font-size:24px; }
+      width: 100%;         /* 100% 寬度 */
+      height: 100%;        /* 100% 高度 */
+      border: none;
     }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <h1 id="mainTitle"></h1>
-
   <div class="main-content">
     <div class="gift-container gift-animate" id="gift-box" tabindex="0" role="button" aria-label="Open the gift">
       <img class="cover-image" src="images/box-top.png" alt="cover image" id="coverImage">
       <button class="open-button" id="openButton">READ</button>
     </div>
-    <div id="message"></div>
   </div>
 
   <div id="pdf-container">
@@ -104,9 +84,6 @@
       .then(res => res.json())
       .then(d => {
         document.documentElement.lang = d.lang;
-        document.title = d.pageTitle;
-        document.getElementById('mainTitle').textContent = d.title;
-        document.getElementById('message').textContent = d.subtitle;
         window.pdfUrl = d.pdf;               // 直接是 Drive preview URL
         if (d.coverImage) document.getElementById('coverImage').src = d.coverImage;
       })
@@ -115,7 +92,6 @@
     const giftBox = document.getElementById('gift-box');
     const coverImage = document.getElementById('coverImage');
     const openButton = document.getElementById('openButton');
-    const message = document.getElementById('message');
     const pdfContainer = document.getElementById('pdf-container');
     const pdfFrame = document.getElementById('pdf-frame');
     const sound = document.getElementById('celebration-sound');
@@ -127,7 +103,6 @@
 
       setTimeout(() => {
         giftBox.style.display = 'none';
-        message.classList.add('show');
         pdfFrame.src = window.pdfUrl;       // 這裡就讀 Drive 內容
         pdfContainer.classList.add('show');
         sound.play().catch(()=>{});
