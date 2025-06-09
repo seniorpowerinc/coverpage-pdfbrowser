@@ -1,49 +1,145 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>我的書籍閱讀頁面</title>
+  <meta charset="UTF-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <title id="pageTitle"></title>
   <style>
-    /* 讓 PDF 全螢幕顯示 */
+    /* ---------- 全域樣式 ---------- */
     html, body {
-      margin: 0;
-      padding: 0;
-      height: 90%;
-      width: 90%;
+      margin: 0; padding: 0;
+      width:100%; height:100%;
+      overflow:auto;
+      background: linear-gradient(135deg, #e0f7fa 0%, #bbdefb 50%, #c5cae9 100%);
+      font-family: Arial, sans-serif;
+      display: flex; flex-direction: column; align-items: center;
     }
-    iframe {
-      border: none;
-      width: 100%;
-      height: 100%;
+    .main-content {
+      width: 100%; max-width: 800px;
+      margin:0 auto; flex:1;
+      display:flex; flex-direction:column;
+      justify-content:center; align-items:center;
+      padding-bottom:20px; box-sizing:border-box;
     }
-    /* 可選：在頂部加個標題列 */
-    header {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%;
-      background: #333;
-      color: #fff;
-      padding: 0.5rem 1rem;
-      font-size: 1.2rem;
-      z-index: 10;
+    h1 { font-weight:bold; font-size:34px; margin:20px 0 10px; }
+    .gift-container {
+      position:relative; width:90vw; max-width:500px;
+      margin:0 auto 20px; perspective:1000px;
+      cursor:pointer;
     }
-    main {
-      /* 因為 header 高度約 2rem，這裡往下推 */
-      position: absolute;
-      top: 2.5rem; left: 0; right: 0; bottom: 0;
+    .cover-image {
+      width:100%; height:auto; border-radius:10px;
+      box-shadow:0 8px 25px rgba(0,0,0,0.2);
+      transition:transform 0.5s, opacity 0.5s;
+      z-index:2; position:relative;
+    }
+    .gift-container:hover .cover-image { transform: scale(1.05); }
+    .cover-image.lift-open { transform: scale(1.8); opacity:0; }
+    #message {
+      display:none; font-size:28px; margin-top:20px;
+      opacity:0; transform:translateY(20px);
+      transition:opacity 1s, transform 1s;
+    }
+    #message.show { display:block; opacity:1; transform:translateY(0); }
+    .open-button {
+      background: linear-gradient(145deg, #63BE7B, #FFEF9C);
+      color:black; border:none; padding:12px 30px;
+      font-size:34px; font-weight:bold; border-radius:50px;
+      box-shadow:0 5px 15px rgba(255,94,98,0.4);
+      position:absolute; z-index:3; letter-spacing:2px;
+      bottom:60px; left:50%; transform:translateX(-50%);
+      cursor:pointer;
+    }
+    .gift-animate { animation:pulse 2s ease-in-out infinite; animation-delay:1s; }
+    @keyframes pulse {
+      0% { transform:scale(1); } 50% { transform:scale(1.05); } 100% { transform:scale(1); }
+    }
+
+    /* 全螢幕 PDF 容器 */
+    #pdf-container {
+      display:none; position:fixed; top:0; left:0;
+      width:80%; height:100vh; background:white;
+      z-index:999; overflow:auto; -webkit-overflow-scrolling: touch;
+    }
+    #pdf-container.show { display:block; }
+    #pdf-frame {
+      width:90%; height:90%; border:none;
+    }
+
+    /* 手機版微調 */
+    @media (max-width:768px) {
+      h1 { font-size:28px; }
+      .open-button { font-size:28px; padding:10px 24px; bottom:40px; }
+      .gift-container { width:95%; }
+      #message { font-size:24px; }
     }
   </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <header>
-    📖 我的書：《書名填這裡》
-  </header>
-  <main>
-    <iframe
-      src="https://drive.google.com/file/d/1LLEd16e-oboLnoZ-0gYbaIHF5v1g8a1s/preview"
-      allow="autoplay"
-    ></iframe>
-  </main>
+  <h1 id="mainTitle"></h1>
+
+  <div class="main-content">
+    <div class="gift-container gift-animate" id="gift-box" tabindex="0" role="button" aria-label="Open the gift">
+      <img class="cover-image" src="images/box-top.png" alt="cover image" id="coverImage">
+      <button class="open-button" id="openButton">READ</button>
+    </div>
+    <div id="message"></div>
+  </div>
+
+  <div id="pdf-container">
+    <iframe id="pdf-frame" src="" allowfullscreen></iframe>
+  </div>
+
+  <audio id="celebration-sound" src="images/open.mp3" preload="auto"></audio>
+
+  <script>
+    // 加上 cache-bust，確保更新後不會被快取
+    fetch(`data.json?bust=${Date.now()}`)
+      .then(res => res.json())
+      .then(d => {
+        document.documentElement.lang = d.lang;
+        document.title = d.pageTitle;
+        document.getElementById('mainTitle').textContent = d.title;
+        document.getElementById('message').textContent = d.subtitle;
+        window.pdfUrl = d.pdf;               // 直接是 Drive preview URL
+        if (d.coverImage) document.getElementById('coverImage').src = d.coverImage;
+      })
+      .catch(console.error);
+
+    const giftBox = document.getElementById('gift-box');
+    const coverImage = document.getElementById('coverImage');
+    const openButton = document.getElementById('openButton');
+    const message = document.getElementById('message');
+    const pdfContainer = document.getElementById('pdf-container');
+    const pdfFrame = document.getElementById('pdf-frame');
+    const sound = document.getElementById('celebration-sound');
+
+    function openGift() {
+      giftBox.classList.remove('gift-animate');
+      coverImage.classList.add('lift-open');
+      openButton.style.display = 'none';
+
+      setTimeout(() => {
+        giftBox.style.display = 'none';
+        message.classList.add('show');
+        pdfFrame.src = window.pdfUrl;       // 這裡就讀 Drive 內容
+        pdfContainer.classList.add('show');
+        sound.play().catch(()=>{});
+        confetti({ particleCount:150, spread:120, origin:{ y:0.6 } });
+      }, 500);
+    }
+
+    openButton.addEventListener('click', e => { e.stopPropagation(); openGift(); });
+    giftBox.addEventListener('click', openGift);
+    giftBox.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openGift(); }
+    });
+  </script>
 </body>
 </html>
