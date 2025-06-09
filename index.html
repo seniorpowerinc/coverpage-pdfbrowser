@@ -8,23 +8,22 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <style>
-    /* 全域重置，移除 flex 佈局以免影響內部滾動 */
+    /* ---------- 全域重置 ---------- */
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden; /* 隱藏 body 滾動 */
+      overflow: hidden;
       background: linear-gradient(135deg, #e0f7fa 0%, #bbdefb 50%, #c5cae9 100%);
       font-family: Arial, sans-serif;
     }
 
-    /* 封面區滿版 */
+    /* ---------- 封面區 ---------- */
     .gift-container {
       position: relative;
       width: 100vw;
       height: 100vh;
-      display: block;
     }
     .cover-image {
       width: 100%;
@@ -33,12 +32,12 @@
       transition: transform 0.5s ease, opacity 0.5s ease;
     }
     .cover-image.lift-open {
-      transform: scale(2);
+      transform: scale(1.5);
       opacity: 0;
     }
     .open-button {
       position: absolute;
-      bottom: 10%;
+      bottom: 15%;
       left: 50%;
       transform: translateX(-50%);
       padding: 12px 24px;
@@ -51,7 +50,7 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     }
 
-    /* PDF 容器滿版可滾動 */
+    /* ---------- PDF 全螢幕容器 ---------- */
     #pdf-container {
       display: none;
       position: fixed;
@@ -60,7 +59,7 @@
       width: 100vw;
       height: 100vh;
       background: #fff;
-      z-index: 10;
+      z-index: 100;
       overflow: auto;
       -webkit-overflow-scrolling: touch;
     }
@@ -71,6 +70,7 @@
       width: 100%;
       height: 100%;
       border: none;
+      display: block;
     }
   </style>
 </head>
@@ -86,36 +86,45 @@
     <iframe id="pdf-frame" src="" allowfullscreen></iframe>
   </div>
 
+  <audio id="celebration-sound" src="images/open.mp3" preload="auto"></audio>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <script>
-    // PDF 路徑
-    const pdfUrl = 'your-pdf-file.pdf'; // 修改為實際 PDF
+    // 從 data.json 動態讀取 PDF 路徑與封面
+    fetch('data.json')
+      .then(r => r.json())
+      .then(d => {
+        window.pdfUrl = d.pdf;
+        if (d.coverImage) document.getElementById('coverImage').src = d.coverImage;
+      })
+      .catch(console.error);
 
     const giftBox = document.getElementById('gift-box');
     const coverImage = document.getElementById('coverImage');
     const openBtn = document.getElementById('openButton');
     const pdfContainer = document.getElementById('pdf-container');
     const pdfFrame = document.getElementById('pdf-frame');
+    const sound = document.getElementById('celebration-sound');
 
     function openGift() {
-      // 動畫
+      // 封面動畫
       coverImage.classList.add('lift-open');
       openBtn.style.display = 'none';
 
       setTimeout(() => {
-        // 隱藏封面
+        // 隱藏封面區
         giftBox.style.display = 'none';
-        // 載入 PDF
-        pdfFrame.src = pdfUrl;
-        // 顯示 PDF 容器
+        // 載入並顯示 PDF
+        pdfFrame.src = window.pdfUrl;
         pdfContainer.classList.add('show');
+        // 播放音效與 confetti
+        sound.play().catch(() => {});
+        confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
       }, 500);
     }
 
     openBtn.addEventListener('click', openGift);
     giftBox.addEventListener('click', openGift);
-    giftBox.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') openGift();
-    });
+    giftBox.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openGift(); });
   </script>
 </body>
 </html>
