@@ -90,18 +90,20 @@
       100% { transform: scale(1); }
     }
 
-    /* ---------- 全螢幕 PDF 容器 ---------- */
+    /* ---------- 全螢幕 PDF 容器（90% 大小） ---------- */
     #pdf-container {
       display: none;       /* 初始隱藏 */
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;         /* 全寬 */
-      height: 100%;        /* 全高 */
+      top: 5%;             /* 上方預留 5% 間距 */
+      left: 5%;            /* 左方預留 5% 間距 */
+      width: 90%;          /* 90% 寬度 */
+      height: 90%;         /* 90% 高度 */
       background: #fff;
       z-index: 999;
       overflow: auto;
       -webkit-overflow-scrolling: touch;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      border-radius: 8px;
     }
     #pdf-frame {
       width: 100%;
@@ -114,6 +116,7 @@
       h1 { font-size: 28px; }
       .open-button { font-size: 28px; padding: 10px 24px; bottom: 40px; }
       .gift-container { width: 95%; }
+      #pdf-container { top: 2.5%; left: 2.5%; width: 95%; height: 95%; }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -122,7 +125,7 @@
   <div class="main-content">
     <h1 id="mainTitle">📖 我的書：《書名填這裡》</h1>
     <div class="gift-container gift-animate" id="gift-box" tabindex="0" role="button" aria-label="Open the gift">
-      <img class="cover-image" src="images/SPI.png" alt="cover image" id="coverImage">
+      <img class="cover-image" src="images/box-top.png" alt="cover image" id="coverImage">
       <button class="open-button" id="openButton">READ</button>
     </div>
   </div>
@@ -151,7 +154,7 @@
       openButton.style.display = 'none';
 
       setTimeout(() => {
-        // 隱藏禮物並顯示 PDF
+        // 隱藏禮物並顯示 PDF（90% 大小）
         giftBox.style.display    = 'none';
         pdfFrame.src             = window.pdfUrl;
         pdfContainer.style.display = 'block';
