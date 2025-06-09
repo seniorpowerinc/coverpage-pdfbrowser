@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -7,7 +7,7 @@
   <meta http-equiv="Expires" content="0">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
-  <title>我的書籍閱讀頁面</title>
+  <title id="pageTitle">GIFT</title>
   <style>
     /* 全域樣式 */
     html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden;
@@ -39,26 +39,42 @@
 <body>
   <div class="main-content">
     <div style="position:relative;">
-      <img id="coverImage" class="cover-image" src="images/SPI.png" alt="封面">
-      <button id="openButton" class="open-button">READ</button>
+      <img id="coverImage" class="cover-image" src="" alt="封面">
+      <button id="openButton" class="open-button">閱讀</button>
     </div>
   </div>
 
   <div id="pdf-container">
-    <iframe id="pdf-frame"
-      src="https://drive.google.com/file/d/1LLEd16e-oboLnoZ-0gYbaIHF5v1g8a1s/preview"
-      allow="autoplay; encrypted-media" loading="lazy">
-    </iframe>
+    <iframe id="pdf-frame" src="" allow="autoplay; encrypted-media" loading="lazy"></iframe>
   </div>
 
   <canvas id="confetti-canvas"></canvas>
   <audio id="celebration-sound" src="images/open.mp3" preload="auto"></audio>
   <script>
+    let windowPdfUrl = '';
+    // 從 data.json 載入設定
+    fetch('data.json?bust=' + Date.now())
+      .then(res => res.json())
+      .then(d => {
+        // 設定語系與標題
+        document.documentElement.lang = d.lang || 'zh-TW';
+        document.getElementById('pageTitle').textContent = d.pageTitle || 'GIFT';
+        document.title = d.pageTitle || document.title;
+        // 封面圖片
+        document.getElementById('coverImage').src = d.coverImage || 'SPI.png';
+        // 轉換 view URL 為 preview URL
+        if (d.pdf) {
+          windowPdfUrl = d.pdf.replace('/view?usp=sharing', '/preview');
+        }
+        // iframe 預載
+        document.getElementById('pdf-frame').src = windowPdfUrl;
+      })
+      .catch(console.error);
+
     const btn = document.getElementById('openButton');
     const img = document.getElementById('coverImage');
     const pdfContainer = document.getElementById('pdf-container');
     const canvas = document.getElementById('confetti-canvas');
-    // 關閉 useWorker，避免 context 讀取錯誤
     const myConfetti = confetti.create(canvas, { resize:true, useWorker:false });
     const sound = document.getElementById('celebration-sound');
 
@@ -67,19 +83,13 @@
       btn.style.display = 'none';
       setTimeout(() => {
         pdfContainer.style.display = 'block';
-        try {
-          sound.play();
-          myConfetti({ particleCount:150, spread:120, origin:{ y:0.6 } });
-        } catch(e) {
-          // confetti context null 可安全忽略
-          console.log('confetti error suppressed');
-        }
+        try { sound.play(); myConfetti({ particleCount:150, spread:120, origin:{ y:0.6 } }); }
+        catch(e) { console.log('confetti suppressed'); }
       }, 300);
     }
-
     btn.addEventListener('click', e => { e.stopPropagation(); openGift(); });
     img.addEventListener('click', openGift);
-    img.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') openGift(); });
+    img.addEventListener('keydown', e => { if (e.key==='Enter'||e.key===' ') openGift(); });
   </script>
 </body>
 </html>
