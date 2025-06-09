@@ -256,11 +256,59 @@
       border: 1px solid #f5c6cb;
       display: block;
     }
+
+    /* Git 倉庫資訊顯示 */
+    .repo-info {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 15px;
+      margin: 15px 0;
+      border-left: 4px solid #4facfe;
+    }
+
+    .repo-info h3 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .repo-info p {
+      margin: 5px 0;
+      font-size: 16px;
+      color: #555;
+    }
+
+    .repo-status {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+
+    .repo-status.detected {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .repo-status.fallback {
+      background: #fff3cd;
+      color: #856404;
+    }
   </style>
 </head>
 
 <body>
   <h1>管理禮物頁面</h1>
+
+  <!-- Git 倉庫資訊顯示 -->
+  <div class="repo-info">
+    <h3>🔧 Git 倉庫資訊</h3>
+    <p>擁有者：<strong id="ownerDisplay">偵測中...</strong></p>
+    <p>倉庫名稱：<strong id="repoDisplay">偵測中...</strong></p>
+    <p>網站網址：<strong id="siteUrlDisplay">計算中...</strong></p>
+    <p>偵測狀態：<span id="detectionStatus" class="repo-status">處理中</span></p>
+  </div>
 
   <!-- 進度條 -->
   <div class="progress" id="progressBar">
@@ -303,7 +351,7 @@
   <select id="lang">
     <option value="zh-TW">繁體中文</option>
     <option value="en">English</option>
-    <option value="ja\">日本語</option>
+    <option value="ja">日本語</option>
   </select>
 
   <input id="coverImage" readonly />
@@ -355,14 +403,68 @@
     let currentStep = 0;
     let filesSelected = { pdf: false, image: false };
 
-    // 初始化 repo 資訊
-    fetch(`data.json?bust=${Date.now()}`)
-      .then(res => res.json())
-      .then(data => {
-        owner = data.owner;
-        repo = data.repo;
-      })
-      .catch(err => alert('無法讀取 data.json：' + err));
+    // 初始化：優先從當前 URL 偵測 Git 倉庫資訊，再從 data.json 載入其他設定
+    async function initializeRepoInfo() {
+      try {
+        // 方法 1: 從當前網址偵測 (GitHub Pages 格式)
+        const currentUrl = window.location.href;
+        const match = currentUrl.match(/https?:\/\/([^\.]+)\.github\.io\/([^\/]+)/);
+        
+        if (match) {
+          owner = match[1];
+          repo = match[2];
+          updateRepoDisplay('自動偵測 (從網址)', '#d4edda', '#155724');
+          return;
+        }
+
+        // 方法 2: 嘗試從 data.json 讀取 (作為後備方案)
+        const response = await fetch(`data.json?bust=${Date.now()}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.owner && data.repo) {
+            owner = data.owner;
+            repo = data.repo;
+            updateRepoDisplay('從設定檔讀取', '#fff3cd', '#856404');
+            return;
+          }
+        }
+
+        // 方法 3: 如果都失敗，提示用戶手動輸入
+        throw new Error('無法自動偵測倉庫資訊');
+
+      } catch (error) {
+        console.warn('倉庫資訊偵測失敗:', error);
+        // 提供手動輸入選項
+        promptForRepoInfo();
+      }
+    }
+
+    // 更新倉庫資訊顯示
+    function updateRepoDisplay(method, bgColor, textColor) {
+      document.getElementById('ownerDisplay').textContent = owner;
+      document.getElementById('repoDisplay').textContent = repo;
+      document.getElementById('siteUrlDisplay').textContent = `https://${owner}.github.io/${repo}/`;
+      
+      const statusElement = document.getElementById('detectionStatus');
+      statusElement.textContent = method;
+      statusElement.style.backgroundColor = bgColor;
+      statusElement.style.color = textColor;
+      statusElement.className = 'repo-status detected';
+    }
+
+    // 手動輸入倉庫資訊
+    function promptForRepoInfo() {
+      const manualOwner = prompt('請輸入 GitHub 擁有者名稱 (owner):');
+      const manualRepo = prompt('請輸入倉庫名稱 (repository):');
+      
+      if (manualOwner && manualRepo) {
+        owner = manualOwner.trim();
+        repo = manualRepo.trim();
+        updateRepoDisplay('手動輸入', '#f8d7da', '#721c24');
+      } else {
+        alert('需要倉庫資訊才能繼續操作');
+      }
+    }
 
     // 驗證 PDF URL
     function validatePdfUrl() {
@@ -441,7 +543,8 @@
     }
 
     // DOM ready
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initializeRepoInfo();
       markStepDone(0);
       updateButtonStates();
     });
@@ -458,6 +561,11 @@
 
     // 載入目前設定
     function loadData() {
+      if (!owner || !repo) {
+        alert('請先確認倉庫資訊');
+        return;
+      }
+
       const token = getToken();
       fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data.json`, {
         headers: { Authorization: `token ${token}` }
