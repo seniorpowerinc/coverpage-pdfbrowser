@@ -295,6 +295,11 @@
       background: #fff3cd;
       color: #856404;
     }
+
+    .repo-status.manual {
+      background: #f8d7da;
+      color: #721c24;
+    }
   </style>
 </head>
 
@@ -403,7 +408,7 @@
     let currentStep = 0;
     let filesSelected = { pdf: false, image: false };
 
-    // 初始化：優先從當前 URL 偵測 Git 倉庫資訊，再從 data.json 載入其他設定
+    // 初始化：優先從當前 URL 偵測 Git 倉庫資訊
     async function initializeRepoInfo() {
       try {
         // 方法 1: 從當前網址偵測 (GitHub Pages 格式)
@@ -413,24 +418,12 @@
         if (match) {
           owner = match[1];
           repo = match[2];
-          updateRepoDisplay('自動偵測 (從網址)', '#d4edda', '#155724');
+          updateRepoDisplay('自動偵測 (從網址)', 'detected');
           return;
         }
 
-        // 方法 2: 嘗試從 data.json 讀取 (作為後備方案)
-        const response = await fetch(`data.json?bust=${Date.now()}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.owner && data.repo) {
-            owner = data.owner;
-            repo = data.repo;
-            updateRepoDisplay('從設定檔讀取', '#fff3cd', '#856404');
-            return;
-          }
-        }
-
-        // 方法 3: 如果都失敗，提示用戶手動輸入
-        throw new Error('無法自動偵測倉庫資訊');
+        // 方法 2: 如果從網址偵測失敗，提示用戶手動輸入
+        throw new Error('無法從網址自動偵測倉庫資訊');
 
       } catch (error) {
         console.warn('倉庫資訊偵測失敗:', error);
@@ -440,16 +433,14 @@
     }
 
     // 更新倉庫資訊顯示
-    function updateRepoDisplay(method, bgColor, textColor) {
+    function updateRepoDisplay(method, statusType) {
       document.getElementById('ownerDisplay').textContent = owner;
       document.getElementById('repoDisplay').textContent = repo;
       document.getElementById('siteUrlDisplay').textContent = `https://${owner}.github.io/${repo}/`;
       
       const statusElement = document.getElementById('detectionStatus');
       statusElement.textContent = method;
-      statusElement.style.backgroundColor = bgColor;
-      statusElement.style.color = textColor;
-      statusElement.className = 'repo-status detected';
+      statusElement.className = `repo-status ${statusType}`;
     }
 
     // 手動輸入倉庫資訊
@@ -460,7 +451,7 @@
       if (manualOwner && manualRepo) {
         owner = manualOwner.trim();
         repo = manualRepo.trim();
-        updateRepoDisplay('手動輸入', '#f8d7da', '#721c24');
+        updateRepoDisplay('手動輸入', 'manual');
       } else {
         alert('需要倉庫資訊才能繼續操作');
       }
@@ -575,6 +566,8 @@
           sha = data.sha;
           const raw = atob(data.content);
           const content = JSON.parse(decodeURIComponent(escape(raw)));
+          
+          // 只載入內容相關的資料，不包含 owner 和 repo
           document.getElementById('pageTitle').value = content.pageTitle || '';
           document.getElementById('lang').value = content.lang || 'zh-TW';
           document.getElementById('pdfUrl').value = content.pdf || '';
@@ -703,7 +696,7 @@
       });
     }
 
-    // 更新 data.json
+    // 更新 data.json (只保存內容資料，不包含 repo 資訊)
     function updateData() {
       if (isDeploying) {
         alert('部署中，請稍後再試。');
@@ -711,14 +704,15 @@
       }
       isDeploying = true;
       const token = getToken();
+      
+      // 只保存內容相關的資料
       const payload = {
         pageTitle: document.getElementById('pageTitle').value,
         lang: document.getElementById('lang').value,
         pdf: document.getElementById('pdfUrl').value.trim(),
-        coverImage: document.getElementById('coverImage').value,
-        owner,
-        repo
+        coverImage: document.getElementById('coverImage').value
       };
+      
       fetch(`https://api.github.com/repos/${owner}/${repo}/contents/data.json`, {
         method: 'PUT',
         headers: { Authorization: `token ${token}` },
