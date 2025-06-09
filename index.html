@@ -1,254 +1,48 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
-  <title id="pageTitle"></title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>我的書籍閱讀頁面</title>
   <style>
-    /* ---------- 全域樣式 ---------- */
+    /* 讓 PDF 全螢幕顯示 */
     html, body {
       margin: 0;
       padding: 0;
+      height: 100%;
+    }
+    iframe {
+      border: none;
       width: 100%;
       height: 100%;
-      /* 將 overflow 設回 auto，讓 iframe 內部的滾動事件能正常傳遞 */
-      overflow: auto;
-      background: linear-gradient(135deg, #e0f7fa 0%, #bbdefb 50%, #c5cae9 100%);
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
     }
-
-    /* 桌面版內容置中，限制寬度 */
-    .main-content {
-      width: 100%;
-      max-width: 800px;
-      margin: 0 auto;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding-bottom: 20px;
-      box-sizing: border-box;
-    }
-
-    h1 {
-      font-weight: bold;
-      font-size: 34px;
-      margin: 20px 0 10px;
-    }
-
-    .gift-container {
-      position: relative;
-      width: 90vw;
-      max-width: 500px;
-      margin: 0 auto 20px auto;
-      perspective: 1000px;
-      cursor: pointer;
-    }
-
-    .cover-image {
-      width: 100%;
-      height: auto;
-      border-radius: 10px;
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-      transition: transform 0.5s ease, opacity 0.5s ease;
-      z-index: 2;
-      position: relative;
-    }
-
-    .gift-container:hover .cover-image {
-      transform: scale(1.05);
-    }
-
-    .cover-image.lift-open {
-      transform: scale(1.8);
-      opacity: 0;
-    }
-
-    /* 文字訊息（打開後顯示） */
-    #message {
-      display: none;
-      font-size: 28px;
-      margin-top: 20px;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 1s ease, transform 1s ease;
-    }
-    #message.show {
-      display: block;
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .open-button {
-      background: linear-gradient(145deg, #63BE7B, #FFEF9C);
-      color: black;
-      border: none;
-      padding: 12px 30px;
-      font-size: 34px;
-      font-weight: bold;
-      border-radius: 50px;
-      box-shadow: 0 5px 15px rgba(255, 94, 98, 0.4);
-      cursor: pointer;
-      position: absolute;
-      z-index: 3;
-      letter-spacing: 2px;
-      bottom: 60px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-
-    .gift-animate {
-      animation: pulse 2s ease-in-out infinite;
-      animation-delay: 1s;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
-    }
-
-    /* ---------- PDF 全螢幕可滾動容器 ---------- */
-    #pdf-container {
-      display: none;          /* 一開始隱藏 */
+    /* 可選：在頂部加個標題列 */
+    header {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 80%;
-      height: 100vh;
-      background: white;      /* 背景白，確保正文可讀 */
-      z-index: 999;           /* 壓到最上層 */
-      overflow: auto;         /* 讓內部 scrollable */
-      -webkit-overflow-scrolling: touch; /* iOS 上啟用慣性滑動 */
+      top: 0; left: 0;
+      width: 100%;
+      background: #333;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      font-size: 1.2rem;
+      z-index: 10;
     }
-    #pdf-container.show {
-      display: block;
-    }
-
-    /* iframe 滿版、100% 高度 */
-    #pdf-frame {
-      width: 90%;
-      height: 90%;
-      border: none;
-    }
-
-    /* ---------- 手機版額外調整 ---------- */
-    @media (max-width: 768px) {
-      h1 {
-        font-size: 28px;
-      }
-      .open-button {
-        font-size: 28px;
-        padding: 10px 24px;
-        bottom: 40px;
-      }
-      .gift-container {
-        width: 95%;
-        max-width: none;
-      }
-      #message {
-        font-size: 24px;
-      }
+    main {
+      /* 因為 header 高度約 2rem，這裡往下推 */
+      position: absolute;
+      top: 2.5rem; left: 0; right: 0; bottom: 0;
     }
   </style>
-
-  <!-- 只保留 confetti 動畫，不要 PDF.js -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <h1 id="mainTitle"></h1>
-
-  <div class="main-content">
-    <div class="gift-container gift-animate" id="gift-box" tabindex="0" role="button" aria-label="Open the gift">
-      <img class="cover-image" src="images/box-top.png" alt="cover image" id="coverImage">
-      <button class="open-button" id="openButton">READ</button>
-    </div>
-
-    <div id="message"></div>
-  </div>
-
-  <!-- 全螢幕 PDF 容器 -->
-  <div id="pdf-container">
-    <iframe id="pdf-frame" src="" allowfullscreen></iframe>
-  </div>
-
-  <audio id="celebration-sound" src="images/open.mp3" preload="auto"></audio>
-
-  <script>
-    // 讀取 data.json，設定標題、副標題、PDF 路徑
-    const bust = Date.now();
-    fetch(`data.json?bust=${bust}`)
-      .then(res => res.json())
-      .then(d => {
-        document.documentElement.lang = d.lang;
-        document.title = d.pageTitle;
-        document.getElementById('mainTitle').textContent = d.title;
-        document.getElementById('message').textContent = d.subtitle;
-        // PDF 檔路徑 (相對或絕對皆可)
-        window.pdfUrl = d.pdf;
-        // 如果有自訂封面，就用它
-        const coverImg = document.getElementById('coverImage');
-        if (d.coverImage) coverImg.src = d.coverImage;
-      })
-      .catch(console.error);
-
-    const giftBox = document.getElementById('gift-box');
-    const coverImage = document.getElementById('coverImage');
-    const openButton = document.getElementById('openButton');
-    const message = document.getElementById('message');
-    const pdfContainer = document.getElementById('pdf-container');
-    const pdfFrame = document.getElementById('pdf-frame');
-    const sound = document.getElementById('celebration-sound');
-
-    function openGift() {
-      // 停止禮物動畫
-      giftBox.classList.remove('gift-animate');
-      // 封面升起並淡出
-      coverImage.classList.add('lift-open');
-      // 隱藏按鈕
-      openButton.style.display = 'none';
-
-      setTimeout(() => {
-        // 隱藏禮物區
-        giftBox.style.display = 'none';
-        // 顯示文字訊息
-        message.classList.add('show');
-
-        // 設定 iframe.src 為 PDF 檔
-        pdfFrame.src = window.pdfUrl;
-
-        // 顯示 PDF 容器 (全螢幕可滾動)
-        pdfContainer.classList.add('show');
-
-        // 播放音效與 confetti
-        try {
-          sound.play().catch(() => {});
-          confetti({ particleCount: 150, spread: 120, origin: { y: 0.6 } });
-        } catch (err) {
-          console.log('Error:', err);
-        }
-      }, 500);
-    }
-
-    // 綁定按鈕、點擊與鍵盤事件
-    openButton.addEventListener('click', e => {
-      e.stopPropagation();
-      openGift();
-    });
-    giftBox.addEventListener('click', openGift);
-    giftBox.addEventListener('keydown', e => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        openGift();
-      }
-    });
-  </script>
+  <header>
+    📖 我的書：《書名填這裡》
+  </header>
+  <main>
+    <iframe
+      src="https://drive.google.com/file/d/1LLEd16e-oboLnoZ-0gYbaIHF5v1g8a1s/preview"
+      allow="autoplay"
+    ></iframe>
+  </main>
 </body>
 </html>
